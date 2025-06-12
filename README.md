@@ -14,7 +14,7 @@ RevMap is a board-level framework designed to help organizations visualize how c
 This is the initial release (v1.0 – Beta) of RevMap.  
 We welcome your suggestions and feedback to improve the tool.
 
-📩 Submit issues or ideas here on GitHub, or email: [your email here]
+📩 Submit issues or ideas here on GitHub
 
 ## 💡 Use Cases
 
