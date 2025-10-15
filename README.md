@@ -4,14 +4,14 @@ RevMap is a board-level framework designed to help organizations visualize how c
 
 ## 📊 What's Included
 
-- Excel-based RevMap template
+- Excel-based RevRisk template
 - Exposure scoring and weighted dashboards
 - Fields for process mapping, third-party dependency, and insurance coverage
 - Designed specifically for boards, audit committees, and CISOs/CFOs
 
 ## 🚧 Beta Notice
 
-This is the initial release (v1.0 – Beta) of RevMap.  
+This is the initial release (v2.0 – Beta) of RevRisk.  
 We welcome your suggestions and feedback to improve the tool.
 
 📩 Submit issues or ideas here on GitHub
