@@ -1,4 +1,4 @@
-# RevMap: The Revenue Exposure Map for Boards
+# RevRisk: The Revenue Exposure Map for Boards
 
 RevMap is a board-level framework designed to help organizations visualize how cyber risks impact revenue-generating operations. It bridges the gap between cybersecurity and financial oversight by mapping risk exposure directly to revenue streams.
 
