@@ -1,6 +1,7 @@
 # RevRisk: The Revenue Exposure Map for Boards
 
 RevMap is a board-level framework designed to help organizations visualize how cyber risks impact revenue-generating operations. It bridges the gap between cybersecurity and financial oversight by mapping risk exposure directly to revenue streams.
+You can access via https://stasiak.com/RevRisk/
 
 ## 📊 What's Included
 
@@ -11,7 +12,7 @@ RevMap is a board-level framework designed to help organizations visualize how c
 
 ## 🚧 Beta Notice
 
-This is the initial release (v2.0 – Beta) of RevRisk.  
+This is the initial release (v4.0 – Beta) of RevRisk.  
 We welcome your suggestions and feedback to improve the tool.
 
 📩 Submit issues or ideas here on GitHub
