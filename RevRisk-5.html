@@ -1,0 +1,1970 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>RevRisk: Revenue Exposure Map for Boards</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Oxygen, Ubuntu, Cantarell, sans-serif;
+            background: #000000;
+            padding: 20px;
+            min-height: 100vh;
+        }
+
+        .container {
+            max-width: 1600px;
+            margin: 0 auto;
+            background: white;
+            border-radius: 16px;
+            box-shadow: 0 20px 60px rgba(0,0,0,0.3);
+            overflow: hidden;
+        }
+
+        .header {
+            background: linear-gradient(135deg, #000000 0%, #1a1a1a 100%);
+            color: white;
+            padding: 30px 40px;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            border-bottom: 3px solid #333;
+        }
+
+        .header-left {
+            display: flex;
+            align-items: center;
+            gap: 20px;
+        }
+
+        .logo {
+            font-weight: bold;
+            font-size: 1.4em;
+            color: #ffc107;
+            letter-spacing: 2px;
+        }
+
+        .header-title h1 {
+            font-size: 2em;
+            margin-bottom: 5px;
+            font-weight: 700;
+            letter-spacing: 1px;
+        }
+
+        .header-title p {
+            font-size: 0.95em;
+            opacity: 0.8;
+            font-weight: 300;
+        }
+
+        .header-actions {
+            display: flex;
+            gap: 10px;
+        }
+
+        .btn-export {
+            background: #ffc107;
+            color: #000;
+            border: none;
+            padding: 12px 24px;
+            border-radius: 6px;
+            cursor: pointer;
+            font-weight: 600;
+            transition: all 0.3s;
+            font-size: 0.95em;
+        }
+
+        .btn-export:hover {
+            background: #ffb300;
+            transform: translateY(-2px);
+        }
+
+        .btn-export:disabled {
+            background: #ccc;
+            cursor: not-allowed;
+            transform: none;
+        }
+
+        .validation-banner {
+            background: #ffebee;
+            border: 2px solid #ef5350;
+            border-radius: 8px;
+            padding: 15px 20px;
+            margin-bottom: 20px;
+            display: none;
+            align-items: center;
+            gap: 12px;
+            color: #c62828;
+            font-weight: 600;
+        }
+
+        .validation-banner.visible {
+            display: flex;
+        }
+
+        .validation-banner .icon {
+            font-size: 1.5em;
+        }
+
+        .validation-banner .message {
+            flex: 1;
+        }
+
+        .stream-total-row {
+            display: flex;
+            align-items: center;
+            gap: 40px;
+            margin-top: 20px;
+            padding: 20px;
+            background: #f8f9fa;
+            border: 2px solid #dee2e6;
+            border-radius: 6px;
+            flex-wrap: wrap;
+        }
+
+        .stream-total-validation {
+            display: flex;
+            gap: 30px;
+            align-items: center;
+            min-width: 300px;
+        }
+
+        .stream-total-validation > div {
+            display: flex;
+            flex-direction: column;
+            gap: 8px;
+        }
+
+        .stream-total-row .label {
+            color: #666;
+            font-size: 0.9em;
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+            font-weight: 600;
+        }
+
+        .stream-total-row .value {
+            font-size: 1.3em;
+            color: #1a1a1a;
+            font-weight: 700;
+        }
+
+        .stream-total-row .value.valid {
+            color: #28a745;
+        }
+
+        .stream-total-row .value.invalid {
+            color: #dc3545;
+        }
+
+        .exposure-totals-inline {
+            display: flex;
+            gap: 20px;
+            align-items: center;
+            flex: 1;
+            min-width: 400px;
+        }
+
+        .exposure-totals-header {
+            color: #1a1a1a;
+            font-size: 0.85em;
+            text-transform: uppercase;
+            letter-spacing: 1px;
+            font-weight: 700;
+            white-space: nowrap;
+        }
+
+        .exposure-totals-items {
+            display: flex;
+            gap: 12px;
+            flex-wrap: wrap;
+            flex: 1;
+        }
+
+        .exposure-total-item {
+            background: white;
+            padding: 10px 14px;
+            border-radius: 6px;
+            border-left: 3px solid #ffc107;
+            border: 2px solid #dee2e6;
+            min-width: 140px;
+        }
+
+        .exposure-total-item .area-name {
+            color: #666;
+            font-size: 0.75em;
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+            margin-bottom: 4px;
+            font-weight: 600;
+        }
+
+        .exposure-total-item .area-value {
+            font-size: 1.2em;
+            font-weight: 700;
+            color: #1a1a1a;
+        }
+
+        .content {
+            padding: 40px;
+        }
+
+        .company-inputs {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
+            gap: 20px;
+            margin-bottom: 30px;
+            padding: 25px;
+            background: #fff3cd;
+            border-radius: 8px;
+            border: 2px solid #ffc107;
+        }
+
+        .input-group {
+            display: flex;
+            flex-direction: column;
+            gap: 8px;
+        }
+
+        .input-group label {
+            font-weight: 600;
+            color: #333;
+            font-size: 0.95em;
+        }
+
+        .input-group input {
+            padding: 12px;
+            border: 2px solid #ffc107;
+            border-radius: 6px;
+            font-size: 1em;
+        }
+
+        .dashboard {
+            background: linear-gradient(135deg, #f8f9fa 0%, #e9ecef 100%);
+            border-radius: 12px;
+            padding: 30px;
+            margin-bottom: 30px;
+            border: 2px solid #dee2e6;
+        }
+
+        .dashboard-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
+            gap: 20px;
+            margin-bottom: 25px;
+        }
+
+        .metric-card {
+            background: white;
+            border-radius: 8px;
+            padding: 20px;
+            border: 2px solid #dee2e6;
+            box-shadow: 0 2px 8px rgba(0,0,0,0.05);
+        }
+
+        .metric-card.revenue {
+            background: linear-gradient(135deg, #e3f2fd 0%, #bbdefb 100%);
+            border-color: #90caf9;
+        }
+
+        .metric-card.exposed {
+            background: linear-gradient(135deg, #fff3e0 0%, #ffe0b2 100%);
+            border-color: #ffb74d;
+        }
+
+        .metric-card.retained {
+            background: linear-gradient(135deg, #ffebee 0%, #ffcdd2 100%);
+            border-color: #ef9a9a;
+        }
+
+        .metric-card.insurable {
+            background: linear-gradient(135deg, #e8f5e9 0%, #c8e6c9 100%);
+            border-color: #81c784;
+        }
+
+        .metric-card h3 {
+            color: #666;
+            font-size: 0.85em;
+            text-transform: uppercase;
+            letter-spacing: 1px;
+            margin-bottom: 10px;
+            font-weight: 600;
+            display: flex;
+            align-items: center;
+            gap: 8px;
+        }
+
+        .metric-card h3 .icon {
+            font-size: 1.3em;
+        }
+
+        .metric-card .value {
+            font-size: 2em;
+            font-weight: 700;
+            margin-bottom: 5px;
+            color: #1a1a1a;
+        }
+
+        .metric-card .subtext {
+            color: #999;
+            font-size: 0.85em;
+        }
+
+        .risk-rating-box {
+            background: white;
+            border-radius: 8px;
+            padding: 30px;
+            border: 3px solid #dee2e6;
+            text-align: center;
+        }
+
+        .risk-level-display {
+            font-size: 3em;
+            font-weight: 700;
+            margin-bottom: 15px;
+            display: inline-block;
+            padding: 10px 20px;
+            border-radius: 8px;
+        }
+
+        .risk-low {
+            background: #d4edda;
+            color: #155724;
+        }
+
+        .risk-moderate {
+            background: #fff3cd;
+            color: #856404;
+        }
+
+        .risk-high {
+            background: #f8d7da;
+            color: #721c24;
+        }
+
+        .risk-description {
+            color: #666;
+            font-size: 1.1em;
+            line-height: 1.6;
+            margin-top: 15px;
+        }
+
+        .config-section {
+            background: #f8f9fa;
+            border-radius: 12px;
+            margin-bottom: 30px;
+            border: 2px solid #dee2e6;
+            overflow: hidden;
+        }
+
+        .section-header {
+            background: linear-gradient(135deg, #1a1a1a 0%, #2d2d2d 100%);
+            color: white;
+            padding: 20px 30px;
+            cursor: pointer;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            transition: all 0.3s;
+            border-bottom: 2px solid #333;
+        }
+
+        .section-header:hover {
+            background: linear-gradient(135deg, #2d2d2d 0%, #3a3a3a 100%);
+        }
+
+        .section-header h2 {
+            margin: 0;
+            font-size: 1.4em;
+        }
+
+        .toggle-icon {
+            font-size: 1.5em;
+            transition: transform 0.3s;
+        }
+
+        .section-header.collapsed .toggle-icon {
+            transform: rotate(-90deg);
+        }
+
+        .section-body {
+            padding: 30px;
+            max-height: 3000px;
+            overflow: hidden;
+            transition: max-height 0.3s ease-out, padding 0.3s ease-out;
+        }
+
+        .section-body.collapsed {
+            max-height: 0;
+            padding: 0 30px;
+        }
+
+        .tabs {
+            display: flex;
+            gap: 10px;
+            margin-bottom: 20px;
+            border-bottom: 2px solid #dee2e6;
+            padding-bottom: 10px;
+            flex-wrap: wrap;
+        }
+
+        .tab-btn {
+            background: white;
+            border: 2px solid #dee2e6;
+            padding: 12px 24px;
+            border-radius: 6px 6px 0 0;
+            cursor: pointer;
+            font-size: 1em;
+            font-weight: 600;
+            color: #666;
+            transition: all 0.3s;
+        }
+
+        .tab-btn:hover {
+            background: #e9ecef;
+        }
+
+        .tab-btn.active {
+            background: #1a1a1a;
+            color: white;
+            border-color: #333;
+        }
+
+        .tab-content {
+            display: none;
+        }
+
+        .tab-content.active {
+            display: block;
+        }
+
+        .exposure-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(350px, 1fr));
+            gap: 20px;
+            margin-bottom: 20px;
+        }
+
+        .exposure-card {
+            background: white;
+            border: 2px solid #dee2e6;
+            border-radius: 8px;
+            padding: 20px;
+        }
+
+        .exposure-card h3 {
+            color: #1a1a1a;
+            margin-bottom: 5px;
+            font-size: 1.1em;
+            font-weight: 700;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            gap: 10px;
+        }
+
+        .exposure-card h3 input {
+            flex: 1;
+            padding: 8px;
+            border: 2px solid #e0e0e0;
+            border-radius: 4px;
+            font-size: 1.1em;
+            font-weight: 700;
+        }
+
+        .exposure-card .challenge {
+            color: #666;
+            font-size: 0.9em;
+            line-height: 1.5;
+            margin-bottom: 15px;
+            padding: 12px;
+            background: #f8f9fa;
+            border-left: 4px solid #ffc107;
+            border-radius: 4px;
+        }
+
+        .exposure-card .controls {
+            display: flex;
+            flex-direction: column;
+            gap: 12px;
+        }
+
+        .control-row {
+            display: flex;
+            gap: 10px;
+            align-items: center;
+        }
+
+        .control-row label {
+            font-weight: 600;
+            min-width: 80px;
+            color: #333;
+            font-size: 0.9em;
+        }
+
+        .control-row input,
+        .control-row select {
+            flex: 1;
+            padding: 8px;
+            border: 2px solid #e0e0e0;
+            border-radius: 4px;
+            font-size: 0.9em;
+        }
+
+        .slider-group {
+            display: flex;
+            flex-direction: column;
+            gap: 8px;
+        }
+
+        .slider-group label {
+            font-weight: 600;
+            color: #333;
+            font-size: 0.9em;
+        }
+
+        .slider-container {
+            display: flex;
+            gap: 10px;
+            align-items: center;
+        }
+
+        .slider-container input[type="range"] {
+            flex: 1;
+        }
+
+        .slider-value {
+            min-width: 50px;
+            text-align: right;
+            font-weight: 700;
+            color: #1a1a1a;
+            font-size: 0.95em;
+        }
+
+        .delete-btn {
+            background: #dc3545;
+            color: white;
+            border: none;
+            padding: 8px 12px;
+            border-radius: 4px;
+            cursor: pointer;
+            font-weight: 600;
+            transition: all 0.3s;
+            font-size: 0.9em;
+        }
+
+        .delete-btn:hover {
+            background: #c82333;
+        }
+
+        .add-button {
+            background: #28a745;
+            color: white;
+            border: none;
+            padding: 12px 24px;
+            border-radius: 6px;
+            cursor: pointer;
+            font-weight: 600;
+            margin-top: 20px;
+            transition: all 0.3s;
+            font-size: 1em;
+        }
+
+        .add-button:hover {
+            background: #218838;
+            transform: translateY(-2px);
+        }
+
+        .revenue-section {
+            background: #f8f9fa;
+            border-radius: 12px;
+            padding: 30px;
+            margin-bottom: 30px;
+            border: 2px solid #dee2e6;
+        }
+
+        .revenue-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 20px;
+            flex-wrap: wrap;
+            gap: 15px;
+        }
+
+        .revenue-header h2 {
+            margin: 0;
+            color: #1a1a1a;
+            font-size: 1.5em;
+        }
+
+        .revenue-actions {
+            display: flex;
+            gap: 10px;
+            flex-wrap: wrap;
+            align-items: center;
+        }
+
+        .revenue-actions select {
+            padding: 10px 15px;
+            border: 2px solid #dee2e6;
+            border-radius: 6px;
+            font-size: 0.95em;
+            background: white;
+            cursor: pointer;
+            font-weight: 500;
+            color: #333;
+            min-width: 220px;
+        }
+
+        .stream-row {
+            display: grid;
+            grid-template-columns: 50px 200px 100px repeat(7, 70px) 120px;
+            gap: 10px;
+            padding: 15px;
+            background: white;
+            margin-bottom: 10px;
+            border-radius: 6px;
+            border: 2px solid #e0e0e0;
+            align-items: center;
+        }
+
+        .stream-header {
+            background: linear-gradient(135deg, #1a1a1a 0%, #2d2d2d 100%);
+            color: white;
+            font-weight: 600;
+            border: 2px solid #333 !important;
+        }
+
+        .stream-totals-row {
+            background: #f8f9fa;
+            border: 2px solid #dee2e6;
+            font-weight: 700;
+            color: #1a1a1a;
+            margin-top: 10px;
+        }
+
+        .stream-row input,
+        .stream-row select {
+            padding: 10px;
+            border: 2px solid #e0e0e0;
+            border-radius: 4px;
+            font-size: 0.95em;
+        }
+
+        .stream-row input:focus,
+        .stream-row select:focus {
+            outline: none;
+            border-color: #1a1a1a;
+            box-shadow: 0 0 5px rgba(26, 26, 26, 0.3);
+        }
+
+        .stream-row select.yes {
+            background: #d4edda;
+            color: #155724;
+            font-weight: 600;
+        }
+
+        .stream-row select.maybe {
+            background: #fff3cd;
+            color: #856404;
+            font-weight: 600;
+        }
+
+        .stream-row select.no {
+            background: #f8d7da;
+            color: #721c24;
+            font-weight: 600;
+        }
+
+        .results-section {
+            background: #f8f9fa;
+            border-radius: 12px;
+            padding: 30px;
+            border: 2px solid #dee2e6;
+            margin-bottom: 30px;
+        }
+
+        .results-section h2 {
+            color: #1a1a1a;
+            margin-bottom: 25px;
+            font-size: 1.5em;
+        }
+
+        .results-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
+            gap: 20px;
+        }
+
+        .result-card {
+            background: white;
+            border: 2px solid #dee2e6;
+            border-radius: 8px;
+            padding: 20px;
+            box-shadow: 0 2px 8px rgba(0,0,0,0.05);
+        }
+
+        .result-card h3 {
+            color: #1a1a1a;
+            margin-bottom: 15px;
+            font-size: 1.15em;
+            font-weight: 700;
+        }
+
+        .metric {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 10px;
+            font-size: 0.95em;
+        }
+
+        .metric-label {
+            color: #666;
+            font-weight: 500;
+        }
+
+        .metric-value {
+            color: #1a1a1a;
+            font-weight: 700;
+        }
+
+        .exposure-bar {
+            width: 100%;
+            height: 6px;
+            background: #e0e0e0;
+            border-radius: 3px;
+            overflow: hidden;
+            margin: 12px 0;
+        }
+
+        .exposure-bar-fill {
+            height: 100%;
+            background: linear-gradient(90deg, #ffc107 0%, #ff9800 50%, #f57c00 100%);
+        }
+
+        .action-badge {
+            display: inline-block;
+            padding: 6px 14px;
+            border-radius: 20px;
+            font-weight: 600;
+            text-transform: uppercase;
+            font-size: 0.8em;
+            margin-top: 12px;
+        }
+
+        .action-mitigate {
+            background: #dc3545;
+            color: white;
+        }
+
+        .action-monitor {
+            background: #ffc107;
+            color: white;
+        }
+
+        .action-accept {
+            background: #28a745;
+            color: white;
+        }
+
+        .insurance-analysis-section {
+            background: #e3f2fd;
+            border-radius: 12px;
+            padding: 30px;
+            border: 2px solid #90caf9;
+        }
+
+        .insurance-analysis-section h2 {
+            color: #1a1a1a;
+            margin-bottom: 10px;
+            font-size: 1.4em;
+            font-weight: 700;
+        }
+
+        .insurance-analysis-section > p {
+            color: #666;
+            margin-bottom: 25px;
+            font-size: 1em;
+            line-height: 1.6;
+        }
+
+        .insurance-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
+            gap: 20px;
+        }
+
+        .insurance-card {
+            background: white;
+            border: 2px solid #dee2e6;
+            border-radius: 8px;
+            padding: 20px;
+            box-shadow: 0 2px 8px rgba(0,0,0,0.05);
+        }
+
+        .insurance-card h3 {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            margin-bottom: 10px;
+            font-size: 1em;
+            font-weight: 700;
+            color: #1a1a1a;
+        }
+
+        .insurance-card .icon {
+            font-size: 1.5em;
+        }
+
+        .insurance-card .description {
+            color: #666;
+            font-size: 0.9em;
+            line-height: 1.6;
+            margin-bottom: 12px;
+        }
+
+        .transfer-factor {
+            background: #f8f9fa;
+            padding: 10px;
+            border-radius: 4px;
+            font-size: 0.85em;
+            color: #333;
+            text-align: center;
+            font-weight: 600;
+        }
+
+        @media print {
+            body {
+                background: white;
+                padding: 0;
+            }
+
+            .container {
+                box-shadow: none;
+                border-radius: 0;
+            }
+
+            .btn-print,
+            .add-button,
+            .delete-btn,
+            .revenue-actions select,
+            .tabs,
+            .section-header {
+                display: none !important;
+            }
+
+            .section-body {
+                max-height: none !important;
+                padding: 30px !important;
+            }
+
+            .result-card {
+                page-break-inside: avoid;
+            }
+        }
+
+        @media (max-width: 1400px) {
+            .stream-row {
+                grid-template-columns: 1fr;
+            }
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <div class="header">
+            <div class="header-left">
+                <div class="logo">STASIAK</div>
+                <div class="header-title">
+                    <h1>RevRisk</h1>
+                    <p>Revenue Exposure Map for Boards</p>
+                </div>
+            </div>
+            <div class="header-actions">
+                <button class="btn-export" id="exportCSV">📊 Export CSV</button>
+                <button class="btn-export" id="exportPDF">📄 Export PDF</button>
+            </div>
+        </div>
+
+        <div class="content">
+            <div class="company-inputs">
+                <div class="input-group">
+                    <label for="companyName">Company Name</label>
+                    <input type="text" id="companyName" placeholder="Enter company name">
+                </div>
+                <div class="input-group">
+                    <label for="totalRevenue">Total Annual Revenue ($M)</label>
+                    <input type="number" id="totalRevenue" value="100" min="0" step="0.1" onchange="calculate()">
+                </div>
+            </div>
+
+            <div class="dashboard">
+                <div class="dashboard-grid">
+                    <div class="metric-card revenue">
+                        <h3><span class="icon">📊</span>Total Revenue</h3>
+                        <div class="value" id="displayRevenue">$100M</div>
+                    </div>
+                    <div class="metric-card exposed">
+                        <h3><span class="icon">🎯</span>Total Exposed Revenue</h3>
+                        <div class="value" id="exposedRevenue">$0M</div>
+                    </div>
+                    <div class="metric-card retained">
+                        <h3><span class="icon">🚨</span>Retained Risk</h3>
+                        <div class="value" id="retainedRisk">$0M</div>
+                        <div class="subtext">Uninsurable</div>
+                    </div>
+                    <div class="metric-card insurable">
+                        <h3><span class="icon">✅</span>Insurable Amount</h3>
+                        <div class="value" id="insurableAmount">$0M</div>
+                        <div class="subtext">Via cyber insurance</div>
+                    </div>
+                </div>
+
+                <div class="risk-rating-box">
+                    <h3 style="color: #666; font-size: 0.9em; text-transform: uppercase; letter-spacing: 1px; margin-bottom: 15px; font-weight: 600;">Cyber Risk Rating</h3>
+                    <div class="risk-level-display" id="riskLevel">🟢 Low Risk</div>
+                    <div id="riskDescription" class="risk-description">Exposure is contained, but monitoring is needed.</div>
+                </div>
+
+                <!-- BOARD TALKING POINTS -->
+                <div style="background: #f0f7ff; border-radius: 12px; padding: 20px; margin-top: 20px; border-left: 5px solid #0288d1;">
+                    <h3 style="color: #01579b; margin-bottom: 12px; font-size: 1em; font-weight: 700;">💡 Key Insights for Leadership</h3>
+                    <div id="talkingPoints" style="display: grid; grid-template-columns: repeat(auto-fit, minmax(300px, 1fr)); gap: 15px;">
+                        <!-- Populated by JavaScript -->
+                    </div>
+                </div>
+            </div>
+
+            <!-- QUICK START GUIDE -->
+            <div style="background: #e8f4f8; border-radius: 12px; padding: 25px; margin-bottom: 30px; border-left: 5px solid #0288d1;">
+                <h3 style="color: #01579b; margin-bottom: 15px; font-size: 1.2em; font-weight: 700;">📋 How to Use RevRisk</h3>
+                <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(300px, 1fr)); gap: 20px;">
+                    <div>
+                        <h4 style="color: #0277bd; margin-bottom: 8px; font-weight: 600;">1. Enter Company Info</h4>
+                        <p style="color: #555; font-size: 0.9em; line-height: 1.5;">Add your company name and total annual revenue to set the baseline for exposure calculations.</p>
+                    </div>
+                    <div>
+                        <h4 style="color: #0277bd; margin-bottom: 8px; font-weight: 600;">2. Mark Revenue Stream Exposures</h4>
+                        <p style="color: #555; font-size: 0.9em; line-height: 1.5;"><strong>Y</strong> = Full exposure • <strong>?</strong> = Partial/Uncertain • <strong>N</strong> = No exposure</p>
+                    </div>
+                    <div>
+                        <h4 style="color: #0277bd; margin-bottom: 8px; font-weight: 600;">3. Adjust Transferability (Optional)</h4>
+                        <p style="color: #555; font-size: 0.9em; line-height: 1.5;">Customize what % of each exposure can be covered by insurance based on your policy terms.</p>
+                    </div>
+                    <div>
+                        <h4 style="color: #0277bd; margin-bottom: 8px; font-weight: 600;">4. Review Risk Analysis</h4>
+                        <p style="color: #555; font-size: 0.9em; line-height: 1.5;"><strong>Accept:</strong> Low risk • <strong>Monitor:</strong> Moderate risk • <strong>Mitigate:</strong> High retained risk</p>
+                    </div>
+                    <div>
+                        <h4 style="color: #0277bd; margin-bottom: 8px; font-weight: 600;">5. Understand Insurance Gap</h4>
+                        <p style="color: #555; font-size: 0.9em; line-height: 1.5;">Retained Risk = what your company must absorb. This is your cyber insurance gap.</p>
+                    </div>
+                    <div>
+                        <h4 style="color: #0277bd; margin-bottom: 8px; font-weight: 600;">6. Print/Share Report</h4>
+                        <p style="color: #555; font-size: 0.9em; line-height: 1.5;">Use the Print/PDF button to generate board-ready reports for stakeholders.</p>
+                    </div>
+                </div>
+            </div>
+
+            <!-- RISK RATING LEGEND -->
+            <div style="background: #f5f5f5; border-radius: 12px; padding: 20px; margin-bottom: 30px; border: 2px solid #dee2e6;">
+                <h3 style="color: #1a1a1a; margin-bottom: 15px; font-size: 1.1em; font-weight: 700;">Understanding Risk Ratings</h3>
+                <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(250px, 1fr)); gap: 20px;">
+                    <div style="display: flex; gap: 15px;">
+                        <div style="background: #d4edda; padding: 12px 16px; border-radius: 6px; text-align: center; min-width: 70px; font-weight: 700; color: #155724;">🟢 Low</div>
+                        <div style="color: #666; font-size: 0.9em; line-height: 1.6;">
+                            <strong>Retained Risk &lt; 15%</strong><br/>
+                            Exposure well-managed. Continue monitoring and maintain insurance.
+                        </div>
+                    </div>
+                    <div style="display: flex; gap: 15px;">
+                        <div style="background: #fff3cd; padding: 12px 16px; border-radius: 6px; text-align: center; min-width: 70px; font-weight: 700; color: #856404;">🟡 Moderate</div>
+                        <div style="color: #666; font-size: 0.9em; line-height: 1.6;">
+                            <strong>Retained Risk 15-30%</strong><br/>
+                            Some streams have uninsurable exposure. Target mitigation efforts.
+                        </div>
+                    </div>
+                    <div style="display: flex; gap: 15px;">
+                        <div style="background: #f8d7da; padding: 12px 16px; border-radius: 6px; text-align: center; min-width: 70px; font-weight: 700; color: #721c24;">🔴 High</div>
+                        <div style="color: #666; font-size: 0.9em; line-height: 1.6;">
+                            <strong>Retained Risk &gt; 30%</strong><br/>
+                            Significant uninsurable exposure. Urgent mitigation required.
+                        </div>
+                    </div>
+                </div>
+            </div>
+            <div class="config-section">
+                <div class="section-header collapsed" onclick="toggleSection(this)">
+                    <h2>Exposure Areas Configuration</h2>
+                    <span class="toggle-icon">▶</span>
+                </div>
+                <div class="section-body" style="display: none;">
+                    <div class="tabs">
+                        <button class="tab-btn active" onclick="switchTab(event, 'exposures')">Exposure Areas</button>
+                        <button class="tab-btn" onclick="switchTab(event, 'coverage')">Coverage Analysis</button>
+                    </div>
+
+                    <!-- Exposures Tab -->
+                    <div id="exposures" class="tab-content active">
+                        <div class="exposure-grid" id="exposuresGrid"></div>
+                        <button class="add-button" onclick="addExposureArea()">+ Add Exposure Area</button>
+                    </div>
+
+                    <!-- Coverage Analysis Tab -->
+                    <div id="coverage" class="tab-content">
+                        <div class="exposure-grid" id="coverageGrid"></div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- REVENUE STREAMS -->
+            <div class="revenue-section">
+                <div class="revenue-header">
+                    <h2>Revenue Streams</h2>
+                    <div class="revenue-actions">
+                        <select id="templateSelect" onchange="loadTemplate(this.value)">
+                            <option value="">📋 Load Industry Template</option>
+                            <option value="saas">SaaS / Cloud Services</option>
+                            <option value="ecommerce">E-Commerce</option>
+                            <option value="manufacturing">Manufacturing</option>
+                            <option value="healthcare">Healthcare</option>
+                            <option value="financial">Financial Services</option>
+                            <option value="telecom">Telecommunications</option>
+                            <option value="retail">Retail</option>
+                        </select>
+                        <button class="add-button" onclick="addRevenueStream()">+ Add Stream</button>
+                    </div>
+                </div>
+                <div id="streamsContainer"></div>
+            </div>
+
+            <!-- DETAILED RISK ANALYSIS -->
+            <div class="results-section">
+                <h2>Detailed Risk Analysis</h2>
+                <div class="results-grid" id="resultsGrid"></div>
+                <div id="exposureSummary" style="margin-top: 30px; padding: 20px; background: white; border: 2px solid #dee2e6; border-radius: 8px; display: none;">
+                    <h3 style="color: #1a1a1a; margin-bottom: 15px; font-size: 1.1em; font-weight: 700;">🎯 Key Exposure Areas by Revenue Impact</h3>
+                    <div id="exposureSummaryContent" style="display: grid; grid-template-columns: repeat(auto-fit, minmax(280px, 1fr)); gap: 15px;"></div>
+                </div>
+            </div>
+
+            <!-- INSURANCE TRANSFERABILITY ANALYSIS -->
+            <div class="insurance-analysis-section">
+                <h2>Insurance Transferability Analysis</h2>
+                <p>Understanding which cyber risks can be effectively transferred through insurance vs. which must be retained by the organization.</p>
+                <div class="insurance-grid" id="insuranceGrid"></div>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        let exposureAreas = [
+            { id: 'customer', name: 'Customer Access', weight: 2, transferability: 0.2, challenge: 'Reputational damage and customer attrition following a breach are challenging to quantify and often fall outside standard cyber insurance.' },
+            { id: 'thirdparty', name: 'Third-Party Access', weight: 3, transferability: 0.05, challenge: 'Claims arising from third-party breaches often face hurdles. Insurers may deny coverage if the breach originates from a vendor\'s network.' },
+            { id: 'regulated', name: 'Regulated Data', weight: 3, transferability: 0.5, challenge: 'While notification costs may be covered, regulatory fines and penalties are often excluded or subject to sub-limits.' },
+            { id: 'ai', name: 'AI Systems & Automation', weight: 3, transferability: 0.1, challenge: 'Claims related to AI system failures or employee misuse are often excluded. Insurers may cite inadequate internal controls or governance gaps.' },
+            { id: 'cloud', name: 'Cloud-Based Systems', weight: 2, transferability: 0.5, challenge: 'Many policies exclude or limit claims related to third-party cloud service outages, leaving businesses to bear significant losses.' },
+            { id: 'remote', name: 'Remote Access', weight: 2, transferability: 0.5, challenge: 'Claims tied to remote work and BYOD devices are complicated by lack of control and logging, making attribution difficult.' },
+            { id: 'onprem', name: 'On-Prem Systems', weight: 1, transferability: 0.7, challenge: 'Organizations have greater control over on-premises systems, making it easier to attribute incidents and successfully claim insurance.' }
+        ];
+
+        let revenueStreams = [
+            { name: 'Revenue Stream 1', percentage: 50, customer: 'Y', thirdparty: 'Y', regulated: 'N', ai: 'Y', cloud: 'Y', remote: '?', onprem: 'N' },
+            { name: 'Revenue Stream 2', percentage: 30, customer: 'Y', thirdparty: 'N', regulated: 'Y', ai: 'N', cloud: 'Y', remote: 'N', onprem: 'Y' },
+            { name: 'Revenue Stream 3', percentage: 20, customer: 'N', thirdparty: 'Y', regulated: 'N', ai: '?', cloud: 'N', remote: 'Y', onprem: 'N' }
+        ];
+
+        const templates = {
+            saas: [
+                { name: 'Subscription Revenue', percentage: 60 },
+                { name: 'Professional Services', percentage: 25 },
+                { name: 'Support & Maintenance', percentage: 15 }
+            ],
+            ecommerce: [
+                { name: 'Product Sales', percentage: 70 },
+                { name: 'Marketplace Commissions', percentage: 20 },
+                { name: 'Advertising', percentage: 10 }
+            ],
+            manufacturing: [
+                { name: 'Product Sales', percentage: 75 },
+                { name: 'Parts & Service', percentage: 20 },
+                { name: 'Licensing', percentage: 5 }
+            ],
+            healthcare: [
+                { name: 'Patient Services', percentage: 60 },
+                { name: 'Insurance Reimbursement', percentage: 30 },
+                { name: 'Research & Education', percentage: 10 }
+            ],
+            financial: [
+                { name: 'Lending', percentage: 40 },
+                { name: 'Investment Management', percentage: 35 },
+                { name: 'Transaction Fees', percentage: 25 }
+            ],
+            telecom: [
+                { name: 'Voice Services', percentage: 35 },
+                { name: 'Data Services', percentage: 45 },
+                { name: 'Content & Media', percentage: 20 }
+            ],
+            retail: [
+                { name: 'In-Store Sales', percentage: 60 },
+                { name: 'Online Sales', percentage: 30 },
+                { name: 'Other Services', percentage: 10 }
+            ]
+        };
+
+        function toggleSection(header) {
+            header.classList.toggle('collapsed');
+            const body = header.nextElementSibling;
+            if (body.style.display === 'none') {
+                body.style.display = 'block';
+            } else {
+                body.style.display = 'none';
+            }
+        }
+
+        function switchTab(event, tabId) {
+            document.querySelectorAll('.tab-btn').forEach(btn => btn.classList.remove('active'));
+            document.querySelectorAll('.tab-content').forEach(content => content.classList.remove('active'));
+            event.target.classList.add('active');
+            document.getElementById(tabId).classList.add('active');
+        }
+
+        function initializeApp() {
+            renderExposureAreas();
+            renderCoverageAnalysis();
+            renderInsuranceAnalysis();
+            renderStreams();
+            validateStreams();
+            calculate();
+            
+            // Add export button listeners
+            document.getElementById('exportCSV').addEventListener('click', exportToCSV);
+            document.getElementById('exportPDF').addEventListener('click', exportToPDF);
+        }
+
+        function renderExposureAreas() {
+            const grid = document.getElementById('exposuresGrid');
+            grid.innerHTML = '';
+
+            exposureAreas.forEach((area, index) => {
+                const card = document.createElement('div');
+                card.className = 'exposure-card';
+                card.innerHTML = `
+                    <h3>
+                        <input type="text" value="${area.name}" onchange="updateExposure(${index}, 'name', this.value)">
+                        <button class="delete-btn" onclick="deleteExposure(${index})" style="margin-left: 10px;">×</button>
+                    </h3>
+                    <div class="challenge">${area.challenge}</div>
+                    <div class="controls">
+                        <div class="control-row">
+                            <label>Weight:</label>
+                            <select onchange="updateExposure(${index}, 'weight', parseInt(this.value))">
+                                <option value="1" ${area.weight === 1 ? 'selected' : ''}>1 - Low Risk</option>
+                                <option value="2" ${area.weight === 2 ? 'selected' : ''}>2 - Medium Risk</option>
+                                <option value="3" ${area.weight === 3 ? 'selected' : ''}>3 - High Risk</option>
+                            </select>
+                        </div>
+                        <div class="control-row">
+                            <label>Transferability:</label>
+                            <select onchange="updateExposure(${index}, 'transferability', parseFloat(this.value))">
+                                <option value="0.2" ${area.transferability === 0.2 ? 'selected' : ''}>20% (❌ Very Limited)</option>
+                                <option value="0.5" ${area.transferability === 0.5 ? 'selected' : ''}>50% (⚠️ Partial)</option>
+                                <option value="0.8" ${area.transferability === 0.8 ? 'selected' : ''}>80% (✅ More Transferable)</option>
+                                <option value="1.0" ${area.transferability === 1.0 ? 'selected' : ''}>100% (✅ Fully Transferable)</option>
+                            </select>
+                        </div>
+                    </div>
+                `;
+                grid.appendChild(card);
+            });
+        }
+
+        function renderCoverageAnalysis() {
+            const grid = document.getElementById('coverageGrid');
+            grid.innerHTML = '';
+
+            exposureAreas.forEach((area, index) => {
+                const retained = 1 - area.transferability;
+                const card = document.createElement('div');
+                card.className = 'exposure-card';
+                card.innerHTML = `
+                    <h3>${area.name}</h3>
+                    <div class="challenge">${area.challenge}</div>
+                    <div class="slider-group">
+                        <label>Transferability: <strong>${(area.transferability * 100).toFixed(0)}%</strong></label>
+                        <div class="slider-container">
+                            <input type="range" min="0" max="100" step="10" value="${area.transferability * 100}" 
+                                onchange="updateExposure(${index}, 'transferability', this.value / 100)" style="width: 100%;">
+                        </div>
+                        <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 10px; margin-top: 10px; font-size: 0.9em;">
+                            <div style="background: #d4edda; padding: 10px; border-radius: 4px; text-align: center;">
+                                <div style="color: #666; font-size: 0.8em;">Insurable</div>
+                                <div style="color: #155724; font-weight: 700;">${(area.transferability * 100).toFixed(0)}%</div>
+                            </div>
+                            <div style="background: #f8d7da; padding: 10px; border-radius: 4px; text-align: center;">
+                                <div style="color: #666; font-size: 0.8em;">Retained Risk</div>
+                                <div style="color: #721c24; font-weight: 700;">${(retained * 100).toFixed(0)}%</div>
+                            </div>
+                        </div>
+                    </div>
+                `;
+                grid.appendChild(card);
+            });
+        }
+
+        function renderInsuranceAnalysis() {
+            const grid = document.getElementById('insuranceGrid');
+            grid.innerHTML = '';
+
+            const insuranceIcons = {
+                'customer': '❌',
+                'thirdparty': '❌',
+                'regulated': '⚠️',
+                'ai': '❌',
+                'cloud': '⚠️',
+                'remote': '⚠️',
+                'onprem': '✅'
+            };
+
+            const insuranceTitles = {
+                'customer': 'Customer Access - Limited',
+                'thirdparty': 'Third-Party Access - Difficult',
+                'regulated': 'Regulated Data - Partial',
+                'ai': 'AI Systems & Automation - Limited',
+                'cloud': 'Cloud-Based Systems - Partial',
+                'remote': 'Remote Access - Partial',
+                'onprem': 'On-Prem Systems - More Transferable'
+            };
+
+            exposureAreas.forEach((area) => {
+                const card = document.createElement('div');
+                card.className = 'insurance-card';
+                card.innerHTML = `
+                    <h3>
+                        <span class="icon">${insuranceIcons[area.id]}</span>
+                        ${insuranceTitles[area.id]}
+                    </h3>
+                    <div class="description">${area.challenge}</div>
+                    <div class="transfer-factor">Transfer Factor: ${(area.transferability * 100).toFixed(0)}% insurable by insurance</div>
+                `;
+                grid.appendChild(card);
+            });
+        }
+
+        function updateExposure(index, field, value) {
+            exposureAreas[index][field] = value;
+            renderExposureAreas();
+            renderCoverageAnalysis();
+            renderInsuranceAnalysis();
+            renderStreams();
+            calculate();
+        }
+
+        function deleteExposure(index) {
+            if (exposureAreas.length > 1) {
+                exposureAreas.splice(index, 1);
+                renderExposureAreas();
+                renderCoverageAnalysis();
+                renderInsuranceAnalysis();
+                renderStreams();
+                calculate();
+            }
+        }
+
+        function addExposureArea() {
+            const newArea = {
+                id: `custom_${Date.now()}`,
+                name: `Exposure Area ${exposureAreas.length + 1}`,
+                weight: 2,
+                transferability: 0.5,
+                challenge: 'Describe the challenge in transferring this risk via insurance.'
+            };
+            exposureAreas.push(newArea);
+            renderExposureAreas();
+            renderCoverageAnalysis();
+            renderInsuranceAnalysis();
+            renderStreams();
+            calculate();
+        }
+
+        function renderStreams() {
+            const container = document.getElementById('streamsContainer');
+            
+            // Only clear stream rows, keep totals row if it exists
+            const existingTotals = container.querySelector('.stream-totals-row');
+            const streamsOnly = Array.from(container.children).filter(el => !el.classList.contains('stream-totals-row'));
+            
+            container.innerHTML = '';
+            streamsOnly.forEach(el => container.appendChild(el));
+
+            const header = document.createElement('div');
+            header.className = 'stream-row stream-header';
+            header.innerHTML = `
+                <div>#</div>
+                <div>Revenue Stream</div>
+                <div>Rev %</div>
+                ${exposureAreas.map(a => `<div style="text-align: center;">${a.name.split(' ')[0]}</div>`).join('')}
+                <div>Actions</div>
+            `;
+            container.insertBefore(header, container.firstChild);
+
+            revenueStreams.forEach((stream, index) => {
+                const row = document.createElement('div');
+                row.className = 'stream-row';
+                
+                let accessHTML = '';
+                exposureAreas.forEach(area => {
+                    const val = stream[area.id] || 'N';
+                    const colorClass = val === 'Y' ? 'yes' : val === '?' ? 'maybe' : 'no';
+                    accessHTML += `
+                        <div>
+                            <select class="${colorClass}" onchange="updateStream(${index}, '${area.id}', this.value)">
+                                <option value="Y" ${val === 'Y' ? 'selected' : ''}>Y</option>
+                                <option value="?" ${val === '?' ? 'selected' : ''}>?</option>
+                                <option value="N" ${val === 'N' ? 'selected' : ''}>N</option>
+                            </select>
+                        </div>
+                    `;
+                });
+                
+                row.innerHTML = `
+                    <div>${index + 1}</div>
+                    <div><input type="text" value="${stream.name}" onchange="updateStream(${index}, 'name', this.value)"></div>
+                    <div><input type="number" value="${stream.percentage}" min="0" max="100" step="0.1" onchange="updateStream(${index}, 'percentage', parseFloat(this.value))"></div>
+                    ${accessHTML}
+                    <div><button class="delete-btn" onclick="deleteStream(${index})">Delete</button></div>
+                `;
+                container.appendChild(row);
+            });
+
+            // Check if totals row exists, if not create it
+            if (!container.querySelector('.stream-totals-row')) {
+                const totalsRow = document.createElement('div');
+                totalsRow.className = 'stream-row stream-totals-row';
+                totalsRow.id = 'streamTotalsRow';
+                container.appendChild(totalsRow);
+            }
+
+            updateSelectColors();
+        }
+
+        function renderStreamTotalsRow() {
+            const container = document.getElementById('streamsContainer');
+            const totalsRow = document.getElementById('streamTotalsRow');
+            const revenue = parseFloat(document.getElementById('totalRevenue').value) || 0;
+            const total = revenueStreams.reduce((sum, stream) => sum + (parseFloat(stream.percentage) || 0), 0);
+            const isValid = total === 100;
+            
+            // Calculate exposure totals
+            let exposureTotalsHTML = '';
+            exposureAreas.forEach(area => {
+                let areaTotal = 0;
+                
+                revenueStreams.forEach(stream => {
+                    const streamRevenue = revenue * (stream.percentage / 100);
+                    const exposure = calculateStreamExposure(stream);
+                    const exposedAmount = streamRevenue * (exposure.exposurePercent / 100);
+                    
+                    const value = stream[area.id];
+                    if (value === 'Y' || value === '?') {
+                        const areaWeight = value === 'Y' ? area.weight : area.weight * 0.5;
+                        const totalWeight = exposureAreas.reduce((sum, a) => sum + a.weight, 0);
+                        const areaExposed = exposedAmount * (areaWeight / totalWeight);
+                        areaTotal += areaExposed;
+                    }
+                });
+                
+                exposureTotalsHTML += `<div style="text-align: center; font-weight: 700; color: #1a1a1a;">$${areaTotal.toFixed(2)}M</div>`;
+            });
+            
+            totalsRow.innerHTML = `
+                <div></div>
+                <div style="font-weight: 700;">EXPOSED REVENUE BY AREA</div>
+                <div style="font-weight: 700;">${total}%</div>
+                ${exposureTotalsHTML}
+                <div style="font-weight: 700; ${isValid ? 'color: #28a745;' : 'color: #dc3545;'}">${isValid ? '✅ Valid' : '❌ Invalid'}</div>
+            `;
+        }
+
+        function updateSelectColors() {
+            document.querySelectorAll('.stream-row select').forEach(select => {
+                const value = select.value;
+                select.classList.remove('yes', 'maybe', 'no');
+                select.classList.add(value === 'Y' ? 'yes' : value === '?' ? 'maybe' : 'no');
+            });
+        }
+
+        function loadTemplate(templateName) {
+            if (templateName && templates[templateName]) {
+                revenueStreams = templates[templateName].map(stream => {
+                    const newStream = { ...stream };
+                    exposureAreas.forEach(area => {
+                        newStream[area.id] = 'N';
+                    });
+                    return newStream;
+                });
+                renderStreams();
+                calculate();
+                document.getElementById('templateSelect').value = '';
+            }
+        }
+
+        function addRevenueStream() {
+            const newStream = {
+                name: `Revenue Stream ${revenueStreams.length + 1}`,
+                percentage: 0
+            };
+            exposureAreas.forEach(area => {
+                newStream[area.id] = 'N';
+            });
+            revenueStreams.push(newStream);
+            renderStreams();
+            calculate();
+        }
+
+        function deleteStream(index) {
+            revenueStreams.splice(index, 1);
+            renderStreams();
+            calculate();
+        }
+
+        function updateStream(index, field, value) {
+            revenueStreams[index][field] = value;
+            updateSelectColors();
+            validateStreams();
+            calculate();
+        }
+
+        function validateStreams() {
+            const total = revenueStreams.reduce((sum, stream) => sum + (parseFloat(stream.percentage) || 0), 0);
+            // Disable export buttons if invalid
+            document.getElementById('exportCSV').disabled = total !== 100;
+            document.getElementById('exportPDF').disabled = total !== 100;
+        }
+
+        function calculateStreamExposure(stream) {
+            let totalExposureScore = 0;
+            let totalRetainedScore = 0;
+
+            exposureAreas.forEach(area => {
+                const value = stream[area.id];
+                let weight = 0;
+                
+                if (value === 'Y') {
+                    weight = area.weight;
+                } else if (value === '?') {
+                    weight = area.weight * 0.5;
+                }
+
+                totalExposureScore += weight;
+                totalRetainedScore += weight * (1 - area.transferability);
+            });
+
+            const maxScore = exposureAreas.reduce((sum, area) => sum + area.weight, 0);
+            const exposurePercent = maxScore > 0 ? (totalExposureScore / maxScore) * 100 : 0;
+            const retainedPercent = maxScore > 0 ? (totalRetainedScore / maxScore) * 100 : 0;
+
+            return {
+                exposurePercent,
+                retainedPercent,
+                totalExposureScore,
+                totalRetainedScore
+            };
+        }
+
+        function getActionRecommendation(retainedAmount, streamRevenue) {
+            const retainedPercent = streamRevenue > 0 ? (retainedAmount / streamRevenue) * 100 : 0;
+            
+            if (retainedPercent > 50) {
+                return 'Mitigate';
+            } else if (retainedPercent > 25) {
+                return 'Monitor';
+            } else {
+                return 'Accept';
+            }
+        }
+
+        function calculate() {
+            const totalRevenue = parseFloat(document.getElementById('totalRevenue').value) || 0;
+            document.getElementById('displayRevenue').textContent = `$${totalRevenue.toFixed(1)}M`;
+
+            let totalExposedRevenue = 0;
+            let totalRetainedRisk = 0;
+            let totalInsurableAmount = 0;
+            let worstAction = 'Accept';
+            const resultsGrid = document.getElementById('resultsGrid');
+            resultsGrid.innerHTML = '';
+
+            // Track exposure areas by retained risk impact and revenue impact
+            const exposureImpact = {};
+            const exposureRetainedRisk = {};
+            exposureAreas.forEach(area => {
+                exposureImpact[area.id] = { name: area.name, revenue: 0, count: 0 };
+                exposureRetainedRisk[area.id] = { name: area.name, retainedRisk: 0 };
+            });
+
+            const streamActions = [];
+
+            revenueStreams.forEach((stream) => {
+                const streamRevenue = (stream.percentage / 100) * totalRevenue;
+                const exposure = calculateStreamExposure(stream);
+                
+                const exposedAmount = streamRevenue * (exposure.exposurePercent / 100);
+                const retainedAmount = streamRevenue * (exposure.retainedPercent / 100);
+                const insurableAmount = exposedAmount - retainedAmount;
+
+                totalExposedRevenue += exposedAmount;
+                totalRetainedRisk += retainedAmount;
+                totalInsurableAmount += insurableAmount;
+
+                // Track which exposures affect this stream
+                exposureAreas.forEach(area => {
+                    const val = stream[area.id];
+                    if (val === 'Y' || val === '?') {
+                        exposureImpact[area.id].revenue += streamRevenue;
+                        exposureImpact[area.id].count += 1;
+                        
+                        // Calculate this exposure's contribution to retained risk
+                        let weight = 0;
+                        if (val === 'Y') {
+                            weight = area.weight;
+                        } else if (val === '?') {
+                            weight = area.weight * 0.5;
+                        }
+                        const maxScore = exposureAreas.reduce((sum, a) => sum + a.weight, 0);
+                        const contributedRetainedRisk = streamRevenue * (weight * (1 - area.transferability) / maxScore);
+                        exposureRetainedRisk[area.id].retainedRisk += contributedRetainedRisk;
+                    }
+                });
+
+                const action = getActionRecommendation(retainedAmount, streamRevenue);
+                streamActions.push({ stream: stream.name, action: action, retained: retainedAmount });
+                
+                // Track worst action
+                if (action === 'Mitigate') worstAction = 'Mitigate';
+                else if (action === 'Monitor' && worstAction !== 'Mitigate') worstAction = 'Monitor';
+
+                const card = document.createElement('div');
+                card.className = 'result-card';
+                
+                const actionClass = action === 'Mitigate' ? 'action-mitigate' : 
+                                   action === 'Monitor' ? 'action-monitor' : 'action-accept';
+
+                card.innerHTML = `
+                    <h3>${stream.name}</h3>
+                    <div class="metric">
+                        <span class="metric-label">Revenue Share:</span>
+                        <span class="metric-value">${stream.percentage}%</span>
+                    </div>
+                    <div class="metric">
+                        <span class="metric-label">Revenue Amount:</span>
+                        <span class="metric-value">$${streamRevenue.toFixed(2)}M</span>
+                    </div>
+                    <div class="metric">
+                        <span class="metric-label">Exposure Score:</span>
+                        <span class="metric-value">${exposure.exposurePercent.toFixed(1)}%</span>
+                    </div>
+                    <div class="exposure-bar">
+                        <div class="exposure-bar-fill" style="width: ${exposure.exposurePercent}%"></div>
+                    </div>
+                    <div class="metric">
+                        <span class="metric-label">Exposed Revenue:</span>
+                        <span class="metric-value">$${exposedAmount.toFixed(2)}M</span>
+                    </div>
+                    <div class="metric">
+                        <span class="metric-label">Retained Risk:</span>
+                        <span class="metric-value" style="color: #dc3545;">$${retainedAmount.toFixed(2)}M</span>
+                    </div>
+                    <div class="metric">
+                        <span class="metric-label">Insurable:</span>
+                        <span class="metric-value" style="color: #28a745;">$${insurableAmount.toFixed(2)}M</span>
+                    </div>
+                    <span class="action-badge ${actionClass}">${action}</span>
+                `;
+                resultsGrid.appendChild(card);
+            });
+
+            // Render exposure summary by RETAINED RISK (not just revenue impact)
+            const topExposuresByRisk = Object.values(exposureRetainedRisk)
+                .filter(e => e.retainedRisk > 0)
+                .sort((a, b) => b.retainedRisk - a.retainedRisk)
+                .slice(0, 3);
+
+            if (topExposuresByRisk.length > 0) {
+                document.getElementById('exposureSummary').style.display = 'block';
+                const summaryContent = document.getElementById('exposureSummaryContent');
+                summaryContent.innerHTML = '';
+                
+                topExposuresByRisk.forEach(exposure => {
+                    const card = document.createElement('div');
+                    card.style.cssText = 'background: #f8f9fa; padding: 15px; border-radius: 6px; border-left: 4px solid #dc3545;';
+                    card.innerHTML = `
+                        <div style="font-weight: 700; color: #1a1a1a; margin-bottom: 8px;">${exposure.name}</div>
+                        <div style="color: #666; font-size: 0.9em;">
+                            <strong>$${exposure.retainedRisk.toFixed(2)}M</strong> uninsurable risk
+                        </div>
+                    `;
+                    summaryContent.appendChild(card);
+                });
+            } else {
+                document.getElementById('exposureSummary').style.display = 'none';
+            }
+
+            // Generate talking points
+            const talkingPointsContainer = document.getElementById('talkingPoints');
+            talkingPointsContainer.innerHTML = '';
+            
+            // Point 1: Insurance Gap
+            const insuranceGap = totalRevenue - totalInsurableAmount;
+            const insuranceGapPercent = totalRevenue > 0 ? (insuranceGap / totalRevenue * 100).toFixed(1) : 0;
+            const point1 = document.createElement('div');
+            point1.style.cssText = 'background: white; padding: 12px; border-radius: 6px; border-left: 4px solid #1976d2;';
+            point1.innerHTML = `
+                <div style="font-weight: 600; color: #1a1a1a; font-size: 0.95em;">Insurance Gap</div>
+                <div style="color: #666; font-size: 0.9em; margin-top: 6px;">
+                    <strong>$${insuranceGap.toFixed(1)}M</strong> (${insuranceGapPercent}%) cannot be insured
+                </div>
+            `;
+            talkingPointsContainer.appendChild(point1);
+
+            // Point 2: Highest Risk Stream
+            if (streamActions.length > 0) {
+                const highestRiskStream = streamActions.sort((a, b) => b.retained - a.retained)[0];
+                const point2 = document.createElement('div');
+                point2.style.cssText = 'background: white; padding: 12px; border-radius: 6px; border-left: 4px solid #dc3545;';
+                point2.innerHTML = `
+                    <div style="font-weight: 600; color: #1a1a1a; font-size: 0.95em;">Priority Area</div>
+                    <div style="color: #666; font-size: 0.9em; margin-top: 6px;">
+                        <strong>${highestRiskStream.stream}</strong><br/>
+                        $${highestRiskStream.retained.toFixed(2)}M retained risk (${highestRiskStream.action})
+                    </div>
+                `;
+                talkingPointsContainer.appendChild(point2);
+            }
+
+            // Point 3: Top Exposure Driver
+            if (topExposuresByRisk.length > 0) {
+                const topExposure = topExposuresByRisk[0];
+                const point3 = document.createElement('div');
+                point3.style.cssText = 'background: white; padding: 12px; border-radius: 6px; border-left: 4px solid #f57c00;';
+                point3.innerHTML = `
+                    <div style="font-weight: 600; color: #1a1a1a; font-size: 0.95em;">Top Risk Driver</div>
+                    <div style="color: #666; font-size: 0.9em; margin-top: 6px;">
+                        <strong>${topExposure.name}</strong><br/>
+                        $${topExposure.retainedRisk.toFixed(2)}M of total retained risk
+                    </div>
+                `;
+                talkingPointsContainer.appendChild(point3);
+            }
+
+            document.getElementById('exposedRevenue').textContent = `$${totalExposedRevenue.toFixed(1)}M`;
+            document.getElementById('retainedRisk').textContent = `$${totalRetainedRisk.toFixed(1)}M`;
+            document.getElementById('insurableAmount').textContent = `$${totalInsurableAmount.toFixed(1)}M`;
+
+            const retainedRiskPercent = totalRevenue > 0 ? (totalRetainedRisk / totalRevenue) * 100 : 0;
+            updateRiskLevel(retainedRiskPercent, worstAction);
+            renderStreamTotalsRow();
+        }
+
+        function updateRiskLevel(retainedRiskPercent, worstAction) {
+            const riskLevel = document.getElementById('riskLevel');
+            const riskDesc = document.getElementById('riskDescription');
+            
+            // Determine risk level based on worst action across streams
+            let finalRisk = 'Low';
+            if (worstAction === 'Mitigate') {
+                finalRisk = 'High';
+            } else if (worstAction === 'Monitor') {
+                finalRisk = 'Moderate';
+            }
+            
+            if (finalRisk === 'Low' || (finalRisk === 'Moderate' && retainedRiskPercent < 15)) {
+                riskLevel.textContent = '🟢 Low Risk';
+                riskLevel.className = 'risk-level-display risk-low';
+                riskDesc.textContent = 'Retained cyber exposure is well-managed. Continue monitoring and maintain insurance coverage.';
+            } else if (finalRisk === 'Moderate' || (finalRisk === 'High' && retainedRiskPercent < 30)) {
+                riskLevel.textContent = '🟡 Moderate Risk';
+                riskLevel.className = 'risk-level-display risk-moderate';
+                riskDesc.textContent = 'Material revenue streams have uninsurable cyber exposure. Consider targeted mitigation efforts.';
+            } else {
+                riskLevel.textContent = '🔴 High Risk';
+                riskLevel.className = 'risk-level-display risk-high';
+                riskDesc.textContent = 'Significant cyber exposure cannot be transferred via insurance. Urgent mitigation required.';
+            }
+        }
+
+        function exportToCSV() {
+            if (!validateExportReady()) return;
+            
+            const company = document.getElementById('companyName').value || 'Company';
+            const revenue = parseFloat(document.getElementById('totalRevenue').value) || 0;
+            
+            let csv = 'RevRisk Export Report\n';
+            csv += `Company: ${company}\n`;
+            csv += `Total Revenue: $${revenue}M\n`;
+            csv += `Export Date: ${new Date().toLocaleDateString()}\n\n`;
+            
+            // Revenue Streams
+            csv += 'REVENUE STREAMS\n';
+            csv += 'Revenue Stream Name,Revenue %,Revenue Amount ($M),Exposure Score (%),Exposed Revenue ($M),Retained Risk ($M),Insurable ($M),Action\n';
+            
+            revenueStreams.forEach(stream => {
+                const streamRevenue = revenue * (stream.percentage / 100);
+                const exposure = calculateStreamExposure(stream);
+                const exposedAmount = streamRevenue * (exposure.exposurePercent / 100);
+                const retainedAmount = exposedAmount * (1 - exposure.transferability);
+                const insurableAmount = exposedAmount - retainedAmount;
+                const action = getActionRecommendation(retainedAmount, streamRevenue);
+                
+                csv += `"${stream.name}",${stream.percentage},${streamRevenue.toFixed(2)},${exposure.exposurePercent.toFixed(1)},${exposedAmount.toFixed(2)},${retainedAmount.toFixed(2)},${insurableAmount.toFixed(2)},${action}\n`;
+            });
+            
+            csv += `TOTAL,100,${revenue},,,${document.getElementById('retainedRisk').textContent.replace('$', '').replace('M', '')},$${document.getElementById('insurableAmount').textContent.replace('$', '').replace('M', '')}\n\n`;
+            
+            // Exposure Areas
+            csv += 'EXPOSURE AREAS ASSESSMENT\n';
+            csv += 'Exposure Area,Weight,Transferability (%)\n';
+            exposureAreas.forEach(area => {
+                csv += `"${area.name}",${area.weight},${(area.transferability * 100).toFixed(0)}\n`;
+            });
+            
+            csv += '\nREVENUE STREAM EXPOSURE DETAILS\n';
+            csv += 'Revenue Stream,' + exposureAreas.map(a => a.name).join(',') + '\n';
+            revenueStreams.forEach(stream => {
+                csv += `"${stream.name}"`;
+                exposureAreas.forEach(area => {
+                    csv += `,${stream[area.id]}`;
+                });
+                csv += '\n';
+            });
+            
+            const blob = new Blob([csv], { type: 'text/csv;charset=utf-8;' });
+            const link = document.createElement('a');
+            link.href = URL.createObjectURL(blob);
+            link.download = `${company.replace(/\s+/g, '_')}_RevRisk_${new Date().getTime()}.csv`;
+            link.click();
+        }
+
+        function exportToPDF() {
+            if (!validateExportReady()) return;
+            
+            const company = document.getElementById('companyName').value || 'Company';
+            const revenue = parseFloat(document.getElementById('totalRevenue').value) || 0;
+            
+            // Get key metrics
+            const totalExposed = document.getElementById('exposedRevenue').textContent;
+            const totalRetained = document.getElementById('retainedRisk').textContent;
+            const totalInsurable = document.getElementById('insurableAmount').textContent;
+            const riskLevel = document.getElementById('riskLevel').textContent;
+            
+            let html = `
+            <html>
+            <head>
+                <style>
+                    body { font-family: Arial, sans-serif; margin: 40px; color: #333; }
+                    h1 { color: #000; border-bottom: 3px solid #ffc107; padding-bottom: 10px; }
+                    h2 { color: #1a1a1a; margin-top: 30px; font-size: 1.3em; }
+                    .header { margin-bottom: 30px; }
+                    .metrics { display: grid; grid-template-columns: repeat(4, 1fr); gap: 20px; margin: 20px 0; }
+                    .metric { background: #f8f9fa; padding: 15px; border-radius: 8px; }
+                    .metric-label { font-size: 0.9em; color: #666; text-transform: uppercase; display: block; margin-bottom: 8px; }
+                    .metric-value { font-size: 1.8em; font-weight: 700; color: #1a1a1a; }
+                    table { width: 100%; border-collapse: collapse; margin: 20px 0; }
+                    th { background: #1a1a1a; color: white; padding: 12px; text-align: left; font-weight: 600; }
+                    td { padding: 10px 12px; border-bottom: 1px solid #e0e0e0; }
+                    tr:nth-child(even) { background: #f8f9fa; }
+                    .exposure-area { background: #f0f0f0; padding: 15px; margin: 15px 0; border-radius: 6px; border-left: 4px solid #ffc107; }
+                    .exposure-area h3 { margin: 0 0 10px 0; color: #1a1a1a; }
+                    .risk-low { color: #28a745; }
+                    .risk-moderate { color: #ffc107; }
+                    .risk-high { color: #dc3545; }
+                    .footer { margin-top: 40px; font-size: 0.9em; color: #999; border-top: 1px solid #e0e0e0; padding-top: 20px; }
+                    .talking-point { background: white; padding: 12px; margin: 10px 0; border-left: 4px solid #1976d2; border-radius: 4px; }
+                </style>
+            </head>
+            <body>
+                <div class="header">
+                    <h1>RevRisk: Revenue Exposure Map</h1>
+                    <p><strong>Company:</strong> ${company}</p>
+                    <p><strong>Total Revenue:</strong> $${revenue}M</p>
+                    <p><strong>Report Date:</strong> ${new Date().toLocaleDateString()}</p>
+                </div>
+                
+                <h2>Risk Assessment Summary</h2>
+                <div style="padding: 20px; background: #f8f9fa; border-radius: 8px; margin: 20px 0;">
+                    <div class="metric-value ${riskLevel.includes('Low') ? 'risk-low' : riskLevel.includes('Moderate') ? 'risk-moderate' : 'risk-high'}">${riskLevel}</div>
+                    <p style="margin-top: 15px; color: #666;">${document.getElementById('riskDescription').textContent}</p>
+                </div>
+                
+                <h2>Key Metrics</h2>
+                <div class="metrics">
+                    <div class="metric">
+                        <span class="metric-label">Total Revenue</span>
+                        <span class="metric-value">$${revenue}M</span>
+                    </div>
+                    <div class="metric">
+                        <span class="metric-label">Exposed Revenue</span>
+                        <span class="metric-value">${totalExposed}</span>
+                    </div>
+                    <div class="metric">
+                        <span class="metric-label">Retained Risk</span>
+                        <span class="metric-value">${totalRetained}</span>
+                    </div>
+                    <div class="metric">
+                        <span class="metric-label">Insurable</span>
+                        <span class="metric-value">${totalInsurable}</span>
+                    </div>
+                </div>
+                
+                <h2>Detailed Risk Analysis by Revenue Stream</h2>
+                <table>
+                    <thead>
+                        <tr>
+                            <th>Revenue Stream</th>
+                            <th>Rev %</th>
+                            <th>Revenue ($M)</th>
+                            <th>Exposure Score</th>
+                            <th>Exposed Revenue</th>
+                            <th>Retained Risk</th>
+                            <th>Insurable</th>
+                            <th>Action</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+            `;
+            
+            revenueStreams.forEach(stream => {
+                const streamRevenue = revenue * (stream.percentage / 100);
+                const exposure = calculateStreamExposure(stream);
+                const exposedAmount = streamRevenue * (exposure.exposurePercent / 100);
+                const retainedAmount = exposedAmount * (1 - exposure.transferability);
+                const insurableAmount = exposedAmount - retainedAmount;
+                const action = getActionRecommendation(retainedAmount, streamRevenue);
+                
+                html += `
+                    <tr>
+                        <td><strong>${stream.name}</strong></td>
+                        <td>${stream.percentage}%</td>
+                        <td>$${streamRevenue.toFixed(2)}M</td>
+                        <td>${exposure.exposurePercent.toFixed(1)}%</td>
+                        <td>$${exposedAmount.toFixed(2)}M</td>
+                        <td>$${retainedAmount.toFixed(2)}M</td>
+                        <td>$${insurableAmount.toFixed(2)}M</td>
+                        <td><strong>${action}</strong></td>
+                    </tr>
+                `;
+            });
+            
+            html += `
+                    </tbody>
+                </table>
+                
+                <h2>Key Insights</h2>
+            `;
+            
+            // Add talking points
+            const talkingPointsContainer = document.getElementById('talkingPoints');
+            if (talkingPointsContainer && talkingPointsContainer.children.length > 0) {
+                Array.from(talkingPointsContainer.children).forEach(point => {
+                    html += `<div class="talking-point">${point.innerHTML}</div>`;
+                });
+            }
+            
+            html += `
+                <h2>Exposure Areas Summary</h2>
+            `;
+            
+            exposureAreas.forEach(area => {
+                html += `
+                <div class="exposure-area">
+                    <h3>${area.name}</h3>
+                    <p><strong>Weight:</strong> ${area.weight}/3 | <strong>Transferability:</strong> ${(area.transferability * 100).toFixed(0)}%</p>
+                </div>
+                `;
+            });
+            
+            html += `
+                <div class="footer">
+                    <p>This report is confidential and for board-level decision making. 
+                    For questions or to discuss mitigation strategies, please contact your risk management team.</p>
+                </div>
+            </body>
+            </html>
+            `;
+            
+            const blob = new Blob([html], { type: 'text/html;charset=utf-8;' });
+            const link = document.createElement('a');
+            const pdfWindow = window.open(URL.createObjectURL(blob));
+            
+            // Try to trigger print as PDF
+            setTimeout(() => {
+                pdfWindow.print();
+            }, 250);
+        }
+
+        function validateExportReady() {
+            const total = revenueStreams.reduce((sum, stream) => sum + (parseFloat(stream.percentage) || 0), 0);
+            if (total !== 100) {
+                alert('Revenue streams must total exactly 100% to export. Current total: ' + total + '%');
+                return false;
+            }
+            const company = document.getElementById('companyName').value;
+            if (!company || company.trim() === '') {
+                alert('Please enter a company name before exporting.');
+                return false;
+            }
+            return true;
+        }
+
+        window.addEventListener('DOMContentLoaded', initializeApp);
+    </script>
+</body>
+<script>
+  (function () {
+    const PARENT_ORIGIN = 'https://stasiak.com'; // must match your site origin
+
+    function postHeight() {
+      // Use the largest of the document heights to be safe
+      const body = document.body;
+      const html = document.documentElement;
+      const height = Math.max(
+        body.scrollHeight, body.offsetHeight,
+        html.clientHeight, html.scrollHeight, html.offsetHeight
+      );
+      parent.postMessage({ revriskHeight: height }, PARENT_ORIGIN);
+    }
+
+    // Respond if parent pings us
+    window.addEventListener('message', function (event) {
+      if (!event.origin || event.origin !== PARENT_ORIGIN) return;
+      const data = event.data || {};
+      if (data.revriskPing) postHeight();
+    });
+
+    // Initial + on resize
+    window.addEventListener('load', postHeight);
+    window.addEventListener('resize', function () { requestAnimationFrame(postHeight); });
+
+    // Watch for DOM changes (e.g., accordions, toggles, data loads)
+    const mo = new MutationObserver(function () {
+      requestAnimationFrame(postHeight);
+    });
+    mo.observe(document.documentElement, { childList: true, subtree: true, attributes: true, characterData: false });
+
+    // Transparent + zero margins so it blends into the parent page
+    try {
+      document.documentElement.style.background = 'transparent';
+      document.body.style.background = 'transparent';
+      document.body.style.margin = '0';
+    } catch (e) { /* noop */ }
+  })();
+</script>
+</html>
